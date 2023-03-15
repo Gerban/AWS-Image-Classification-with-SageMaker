@@ -28,7 +28,7 @@ Number of image classes: 133 (currently set to 20 for testing)
 
 ### Access
 Upload the data to an S3 bucket through the AWS Gateway so that SageMaker has access to the data. 
-Data uploaded to S3 bucket: s3://sagemaker-us-east-1-308298057408/data/dogImages
+Data uploaded to S3 bucket: s3://sagemaker-us-east-1-.../data/dogImages
 
 ## Hyperparameter Tuning and Training
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
