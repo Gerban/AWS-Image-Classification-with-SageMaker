@@ -15,7 +15,7 @@ Download the starter files.
 Download/Make the dataset available. 
 
 ## Kernel, Python versions and main code files
-Data Science kernel ml.t3.medium, Python 3.7
+PyTorch Kernel 1.13.0, Python 3.9, ml.t3.medium
 
 - train_and_deploy_AG.ipynb: the main notebook from which tuning, training and endpoint deployment is triggered
 - hpo_AG.py: script that contains functions for hyperparameter tuning
