@@ -49,9 +49,10 @@ def test(model, test_loader, loss_criterion, device):
             loss_test += loss.item() * images.size(0)
             correct_test += torch.sum(pred_test == target.data)
 
-        total_loss_test = loss_test // len(test_loader
-        accuracy_test = 100.0 * (correct_test // len(test_loader))
-
+        total_loss_test = loss_test // len(test_loader)
+        accuracy_test = correct_test.double() // len(test_loader)
+        #accuracy_test = 100*(correct_train // len(train_loader)) 
+            
         logger.info(f"Testing Loss: {total_loss_test}")
         logger.info(f"Testing Accuracy: {accuracy_test}")
 
@@ -89,7 +90,8 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
             correct_train += torch.sum(pred_train == target.data)
 
         total_loss_train = loss_train // len(train_loader)
-        accuracy_train = 100.0 *(correct_train // len(train_loader))
+        accuracy_train = correct_train.double() // len(train_loader)
+        #accuracy_train = 100.0 *(correct_train // len(train_loader))
        
         logger.info(f'For Epoch {epoch+1}, Train loss is: {total_loss_train: .3f}, Train accuracy is: {accuracy_train}')
 
@@ -110,7 +112,8 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
                 correct_eval += torch.sum(pred_eval == target.data)
 
             total_loss_eval = loss_eval // len(valid_loader)
-            accuracy_eval = 100.0 * (correct_eval // len(valid_loader))
+            accuracy_eval = correct_eval.double() // len(valid_loader)
+            #accuracy_eval = 100.0 * (correct_eval // len(valid_loader))
 
             logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
 
