@@ -18,7 +18,7 @@ JPEG_CONTENT_TYPE = 'image/jpeg'
 
 
 # Based on https://github.com/pytorch/examples/blob/master/mnist/main.py
-class_count = 20
+class_count = 33
 
 def Net(class_count):
     model = models.resnet50(pretrained=True)
@@ -27,15 +27,16 @@ def Net(class_count):
         param.requires_grad = False   
 
     num_features = model.fc.in_features
-        
+    logger.info(f'number of linear layer input features are: {num_features}')
+    
     model.fc = nn.Sequential(
-                   nn.Linear(num_features, 224),
+                   nn.Linear(num_features, 256),
+                   nn.Dropout(p=0.1),
                    nn.ReLU(inplace=True),
-                   nn.Linear(224, class_count))
+                   nn.Linear(256, class_count))
     return model
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 
 def model_fn(model_dir):
@@ -46,14 +47,12 @@ def model_fn(model_dir):
     
     with open(os.path.join(model_dir, "model.pth"), "rb") as f:
         print("Loading the dog-classifier model")
-        checkpoint = torch.load(f , map_location =device)
+        checkpoint = torch.load(f , map_location=device)
         model.load_state_dict(checkpoint)
         print('MODEL-LOADED')
         logger.info('model loaded successfully')
     model.eval()
     return model
-
-
 
 
 def input_fn(request_body, content_type=JPEG_CONTENT_TYPE):
@@ -63,7 +62,7 @@ def input_fn(request_body, content_type=JPEG_CONTENT_TYPE):
     logger.debug(f'Request body CONTENT-TYPE is: {content_type}')
     logger.debug(f'Request body TYPE is: {type(request_body)}')
     if content_type == JPEG_CONTENT_TYPE: return Image.open(io.BytesIO(request_body))
-    logger.debug('SO loded JPEG content')
+    logger.debug('Loaded JPEG content')
     # process a URL submitted to the endpoint
     
     if content_type == JSON_CONTENT_TYPE:
@@ -80,30 +79,21 @@ def input_fn(request_body, content_type=JPEG_CONTENT_TYPE):
 # inference
 def predict_fn(input_object, model):
     logger.info('In predict fn')
+                
     test_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
+    
     logger.info("transforming input")
-    input_object=test_transform(input_object)
+    input_object = test_transform(input_object)
     
     with torch.no_grad():
         logger.info("Calling model")
+        
         prediction = model(input_object.unsqueeze(0))
+        
     return prediction
 
-'''
-# postprocess
-def output_fn(predictions, content_type):
-    assert content_type == "application/json"
-    res = predictions.cpu().numpy().tolist()
-    return json.dumps(res)
-
-# Serialize the prediction result into the desired response content type
-def output_fn(prediction, accept=JSON_CONTENT_TYPE):        
-    logger.info('Serializing the generated output.')
-    if accept == JSON_CONTENT_TYPE: 
-        logger.debug(f'Returning response {json.dumps(prediction)}')
-        return json.dumps(prediction), accept
-    raise Exception('Requested unsupported ContentType in Accept: {}'.format(accept))
-'''

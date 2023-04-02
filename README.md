@@ -1,90 +1,90 @@
-# Image Classification using AWS SageMaker
+## Project 3: Image Classification using AWS SageMaker
 
-AWS Sagemaker was used to train a pretrained model that can perform image classification 
-by using the Sagemaker profiling, debugger, hyperparameter tuning and other good ML
-engineering practices. The dog breed dataset was used as a classification task.
+AWS Sagemaker was used to use transfer learning to train a pretrained model (Resnet50) 
+to predict which dog breed a dog image is. The input data consisted of 133 classes of dog images.
+Aside from hyper-parameter tuning Sagemaker profiler and debugger were used during the training process.
+Training and evaluation losses were plotted and some recommendations on model improvements provided.
+The model was deployed at an endpoint with a couple of inference examples carried out for testing. Process:
 
-- A pre-trained Resnet50 model was adapted for the task by adding additional dense layers.
-- Hyperparameters were tuned to find the best hyperparameter combination.
-- The model was trained, where debugging with hooks and profiling was also used.
-- The model was deployed to an endpoints with some inferences carried out.
-
-## Project Set Up and Installation
-Enter AWS through the gateway in the course and open SageMaker Studio. 
-Download the starter files.
-Download/Make the dataset available. 
+- A pre-trained Resnet50 model was adapted for dog image classification by adding additional dense layers.
+- Hyper parameters were tuned to find the best hyper parameter combination.
+- The model was trained, where Sagemaker debugger and profiler were used with their outputs recorded.
+- The model was deployed to an endpoint and a number of inferences were carried out on test images.
 
 ## Kernel, Python versions and main code files
-PyTorch Kernel 1.13.0, Python 3.9, ml.t3.medium
+Kernel:  PyTorch 1.13.0 with Python 3.9 on ml.t3.medium
 
-- train_and_deploy_AG.ipynb: the main notebook from which tuning, training and endpoint deployment is triggered
-- hpo_AG.py: script that contains functions for hyperparameter tuning
-- train_model_AG.py: scrit that contains functions for model training
-- inference.py: script that is used as entry-point for deployed endpoint
-- profiler-report.html: profiler report with details of training job
-- screenshots: folder that stores screenshots submitted as part of project
+- ![train_and_deploy_AG.ipynb](train_and_deploy_AG.ipynb) : the main notebook from which tuning, training and endpoint deployment is triggered
+- ![hpo_AG.py](hpo_AG.py) : script that contains functions for hyperparameter tuning
+- ![train_model_AG.py](train_model_AG.py) : script that contains functions for model training
+- ![inferency.py](inference.py) : script that contains code used as entry point for deployed model endpoint 
 
 ## Dataset
-The provided dataset is the dogbreed classification dataset which can be found in the classroom.
-Dataset used: https://s3-us-west-1.amazonaws.com/udacity-aind/dog-project/dogImages.zip
-Number of image classes: 133 (currently set to 20 for testing)
+The input dataset used for the dog image classification is the dataset suggested by the project (number of classes - 133: 
+https://s3-us-west-1.amazonaws.com/udacity-aind/dog-project/dogImages.zip
 
 ### Access
-Upload the data to an S3 bucket through the AWS Gateway so that SageMaker has access to the data. 
-Data uploaded to S3 bucket: s3://sagemaker-us-east-1-.../data/dogImages
+Upload the data to an S3 bucket through the AWS Gateway so that SageMaker has access to the data:
+Data was uploaded to S3 bucket: s3://sagemaker-us-east-1-308298057408/data/dogImages
 
 ## Hyperparameter Tuning and Training
-What kind of model did you choose for this experiment and why? Give an overview of the types of parameters
-and their ranges used for the hyperparameter search
-A multi-class image classification model was used to classify dog images. 
-A CNN based model (Resnet50) was used as a base, with additional dense layers added for transfer learning.
+What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges 
+used for the hyperparameter search:
+A multi-class image classification model was used to classify dog images with 133 classes.
+A CNN based model (Resnet50) was chosen as a model base, and transfer learning was applied in the form
+of the addition of dense layers added to the Resnet50 network with 133 final outputs corresponding to the 133 classes.
+
+For loss optimisation the Adam Optimiser (or MSProp - tbc) was used and CrossEntropyLoss as a loss function.
 
 Tuned hyperparameters were (provisional):
-- epochs: 5
-- learning rate (lr) - range: 0.01 - 0.1
-- batch_size - range: 32, 64
+- epochs: 5, 10
+- learning rate (lr) - range: 0.001 - 0.1
+- batch_size - range: 64, 128, 256
 
-Best hyperparameters were: epochs = 5, lr = 0.7, batch_size = 32
+Best hyperparameters were: epochs = 5, lr = 0.01, batch_size = 128
 
-Screenshots (to be added):
+Links to screenshots for hyper parameter tuning and training jobs:
+![HPO_tuning_jos](screenshots/hpo_training_jobs.png)
+![Training_jobs](screenhots/training_jobs.png)
+![Metrics_log](screenshots/metrics_log.png)
 
-[HPO_tuning_jobs](screenshots/hpo_training_jobs.png)
+Losses for training and validation data are plotted in the graph, showing a gradual decline for both datasets:
+**ToDo**: Add:Image of loss function 
 
-[Training_jobs](screenhots/training_jobs.png)
+## Debugging and Profiling with Results
+Sagemaker provides model debugging functionality where one can set rules. The rules for overfitting, overtraining, 
+vanishing gradient, poor weight initialisation, and loss not decreasing were added and the debugger logs results.
+Logging statements were also added to functions and the output could then be inspected in CloudWatch logs of the corresponding
+tuning or training jobs. This is an additional tool that can assist in debugging the code to track down issues. 
 
-[Metrics_log](screenshots/metrics_log.png)
+Results from Sagemaker Debugger:
+**ToDo**: Add results
 
-[Endpoint_for_inference](screenshots/Pr3_Endpoint-for-inference.png)
+For computing performance Sagemaker Profiler can be used, which shows system usage statistics, such as low or high CPU, GPU 
+utilisation, carries out training loop analysis and also provides a framework metrics summary.  
 
+Results from Sagemaker Profiler:
+**ToDo**: add issues
 
-## Debugging and Profiling
-**TODO**: Give an overview of how you performed model debugging and profiling in Sagemaker
-Rules for overfitting, overtraining, vanishing gradient, poor weight initialisation, and loss not decreasing
-were added. Profiler rules for low GPU Utilisation and for a Profiler Report were added using methods 
-from sagemaker.debugger.
-
-### Results
-**TODO**: What are the results/insights did you get by profiling/debugging your model?
-A number of initial bugs had to be sorted out, such as a mis-placed comma in the data loader function.
-Log files on CouldWatch were helpful in assisting to track down further bugs. 
-
-Results from debugger: 
-
-Results from profiler:
-
-
-**TODO** Remember to provide the profiler html/pdf file in your submission.
-'add file to repo'
+Link to SageMaker profiler report:
+![profiler-report.html](profiler-report.html)
 
 ## Model Deployment
-The model was deployed using the .deploy() method - currently to run cells in notebook.
-Querying the endpoint can be done by e.g. supplying a url with a dog image, such as:
-request_dict={ "url": "https://s3.amazonaws.com/cdn-origin-etr.akc.org/wp-content/
-uploads/2017/11/20113314/Carolina-Dog-standing-outdoors.jpg" }
+The model was deployed on a ml.m5.large instance. As an entry point the script inference.py was used.
 
-Then, using the.predict() method this will return an array of probabilities for the image to be part of
-each class. Then, np.argmax() returns the class label of the class with highest probability.
-In the above example, the dog image label was ...
+A sceenshot shows the name of the deployed endpoint:
+![deployed_endpoint](screenshorts/deployed_endpoint.png)
 
-The model endpoint name was (to be updated): pytorch-inference-2023-03-18-17-39-38-520
+The endpoint can be queries by submitting test images as input with it then returning the inferred results:
+
+image_path = './dogImages/test/130.Welsh_springer_spaniel/Welsh_springer_spaniel_08215.jpg'
+image_class = "130"
+
+with open(image_path, "rb") as f:
+    payload = f.read()
+    response=predictor.predict(payload, initial_args={"ContentType": "image/jpeg"})
+    pred_class = np.argmax(response, 1) + 1
+    print(pred_class)
+
+Note: when code has completed it is important to delete deployed endpoints and to shut down instances no longer used.
 

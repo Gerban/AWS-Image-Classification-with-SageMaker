@@ -23,7 +23,6 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
-
 def test(model, test_loader, loss_criterion, device):
     '''
     TODO: Complete this function that can take a model and a 
@@ -42,17 +41,16 @@ def test(model, test_loader, loss_criterion, device):
         for images, target in test_loader:
             images = images.to(device)
             target = target.to(device)
-
             outputs = model(images)
             loss = loss_criterion(outputs, target)
-            _, pred_test = torch.max(outputs.data, 1)
+
+            _, pred_test = torch.max(outputs, 1)
             loss_test += loss.item() * images.size(0)
             correct_test += torch.sum(pred_test == target.data)
 
-        total_loss_test = loss_test // len(test_loader)
-        accuracy_test = correct_test.double() // len(test_loader)
-        #accuracy_test = 100*(correct_train // len(train_loader)) 
-            
+        total_loss_test = loss_test / len(test_loader.dataset)
+        accuracy_test = correct_test.double() / len(test_loader.dataset)
+    
         logger.info(f"Testing Loss: {total_loss_test}")
         logger.info(f"Testing Accuracy: {accuracy_test}")
 
@@ -78,21 +76,20 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
         for images, target in train_loader:
             images = images.to(device)
             target = target.to(device)
-
-            optimizer.zero_grad()
             outputs = model(images)
             loss = loss_criterion(outputs, target)
+
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            _, pred_train = torch.max(outputs.data, 1)
+            _, pred_train = torch.max(outputs, 1)
             loss_train += loss.item() * images.size(0)
             correct_train += torch.sum(pred_train == target.data)
 
-        total_loss_train = loss_train // len(train_loader)
-        accuracy_train = correct_train.double() // len(train_loader)
-        #accuracy_train = 100.0 *(correct_train // len(train_loader))
-       
+        total_loss_train = loss_train / len(train_loader.dataset)
+        accuracy_train = correct_train.double() / len(train_loader.dataset)
+    
         logger.info(f'For Epoch {epoch+1}, Train loss is: {total_loss_train: .3f}, Train accuracy is: {accuracy_train}')
 
         model.eval()
@@ -103,24 +100,21 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
             for images, target in valid_loader:
                 images = images.to(device)
                 target = target.to(device)
-
                 outputs = model(images)
                 loss = loss_criterion(outputs, target)
 
-                _, pred_eval = torch.max(outputs.data, 1)
+                _, pred_eval = torch.max(outputs, 1)
                 loss_eval += loss.item() * images.size(0)
                 correct_eval += torch.sum(pred_eval == target.data)
 
-            total_loss_eval = loss_eval // len(valid_loader)
-            accuracy_eval = correct_eval.double() // len(valid_loader)
-            #accuracy_eval = 100.0 * (correct_eval // len(valid_loader))
+            total_loss_eval = loss_eval / len(valid_loader.dataset)
+            accuracy_eval = correct_eval.double() / len(valid_loader.dataset)
 
             logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
 
     logger.info('Training has completed.')
     
     return model
-
 
 def net(class_count):
     '''
@@ -134,14 +128,15 @@ def net(class_count):
         param.requires_grad = False
 
     num_features = model.fc.in_features
+    logger.info(f'number of linear layer input features are: {num_features}')
 
     model.fc = nn.Sequential(
-        nn.Linear(num_features, 224),
+        nn.Linear(num_features, 256),
+        nn.Dropout(p=0.1),
         nn.ReLU(inplace=True),
-        nn.Linear(224, class_count))
+        nn.Linear(256, class_count))
 
     return model
-
 
 
 def create_data_loaders(data, batch_size):
@@ -155,11 +150,11 @@ def create_data_loaders(data, batch_size):
     valid_data_path = os.path.join(data, 'valid')
     test_data_path = os.path.join(data, 'test')
     
-
     # Transform dataset first - resize, crop and normalize, then load train, valid, test data
     transform_train = transforms.Compose([
-        transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
+        transforms.Resize(256),
+        transforms.RandomResizedCrop((224,224)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
@@ -170,7 +165,7 @@ def create_data_loaders(data, batch_size):
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
-
+    
     train_dataset = torchvision.datasets.ImageFolder(root=train_data_path, transform=transform_train)
     valid_dataset = torchvision.datasets.ImageFolder(root=valid_data_path, transform=transform_test)
     test_dataset = torchvision.datasets.ImageFolder(root=test_data_path, transform=transform_test)
@@ -182,8 +177,6 @@ def create_data_loaders(data, batch_size):
     return train_loader, valid_loader, test_loader
 
 
-
-# ToDo: change num_classes back to 133 for final tuning runs after re-uploading the complet set of image data to s3
 def main(args):
     '''
     TODO: Initialize a model by calling the net function
@@ -192,12 +185,13 @@ def main(args):
     logger.info(f'Data Paths: {args.data_dir}')
 
     # Use GPU unit if available
-    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    device='cpu'
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device='cpu'
     print(f'Running model training on device {device}')
 
-    class_count = 20
+    class_count = 133
     model=net(class_count)
+    model=model.to(device)
    
     # Import data using data loader function
     train_loader, valid_loader, test_loader = create_data_loaders(args.data_dir, args.batch_size)
@@ -206,7 +200,10 @@ def main(args):
     TODO: Create your loss and optimizer
     '''
     loss_criterion = nn.CrossEntropyLoss(ignore_index=class_count)
-    optimizer = optim.Adam(model.fc.parameters(), lr=args.lr)
+    #optimizer = optim.Adam(model.fc.parameters(), lr=args.lr)
+        
+    # Testing - check whether other algos perform better
+    optimizer = optim.RMSprop(model.fc.parameters(), lr=args.lr, eps=args.eps, momentum=args.momentum)
 
     '''
     TODO: Call the train function to start training your model
@@ -224,7 +221,6 @@ def main(args):
     '''
     TODO: Save the trained model
     '''
-    #torch.save(model, path)
     logger.info('Saving model...')
 
     if not os.path.exists(args.model_dir):
@@ -232,7 +228,7 @@ def main(args):
     torch.save(model.state_dict(), os.path.join(args.model_dir, "model.pth"))
 
     logger.info(f'Hyperparameters are LR: {args.lr}, Batch Size: {args.batch_size}')
-    logger.info('Model is has been saved, hpo code has finished.')
+    logger.info('Model has been saved, hpo code has finished.')
 
 
 if __name__=='__main__':
@@ -244,6 +240,9 @@ if __name__=='__main__':
     parser.add_argument('--epochs', type=int, default=5, help='Add number of epochs to train (default is: 20)')
     parser.add_argument('--lr', type=float, default=0.05, metavar='LR', help='Add learning rate (default is: 0.05)')
    
+    parser.add_argument('--eps', type=float, default=0.0000008, metavar='EPS')
+    parser.add_argument('--momentum', type=float, default=0.01, metavar='MM')
+
     parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
     parser.add_argument('--output_dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
