@@ -91,7 +91,7 @@ triggered, with by far the most frequent one being to do with memory issues:
 triggered 449 out of 5256 times.
 
 Also triggered 36 times each were LowGPUUtilization and CPUBottlenecks, and BatchSize was also triggered 4 times indicating
-that BatSize was too small. BatchSize of 128 was obtained from hyperparameter optimisation but that may be a local optimum 
+that BatchSize was too small. BatchSize of 128 was obtained from hyperparameter optimisation but that may be a local optimum 
 rather than the best global option within the search space.
 
 **Main step for further improvements:** use of larger compute instance types.
@@ -117,7 +117,7 @@ test_img2 = plt.imread('./dogImages/test/081.Greyhound/Greyhound_05530.jpg')
 Predicted classes returned from deployed endpoint were correct for test_img2: test_img1 - Class 80, test_img2 - Class 81.
 
 This shows that code deployment works but it also reflects the fact that model accuracy, which only reached 50% on training data 
-and with around 40% on validation and test data, is not very high yet and the deployed model thus more prone to wrong predictions.
+and with around 40% on validation and test data, is not very high yet and the deployed model is thus more prone to wrong predictions.
 
 Note: when code has completed it is important to delete deployed endpoints and to shut down instances no longer used.
 
