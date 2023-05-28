@@ -4,37 +4,34 @@ import sys
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 import io
 import requests
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 JSON_CONTENT_TYPE = 'application/json'
 JPEG_CONTENT_TYPE = 'image/jpeg'
 
+class_count = 133
 
-# Based on https://github.com/pytorch/examples/blob/master/mnist/main.py
-class_count = 33
 
-def Net(class_count):
-    model = models.resnet50(pretrained=True)
+def net(class_count):
+    model = models.resnet34(pretrained=True)
 
     for param in model.parameters():
         param.requires_grad = False   
 
     num_features = model.fc.in_features
     logger.info(f'number of linear layer input features are: {num_features}')
-    
-    model.fc = nn.Sequential(
-                   nn.Linear(num_features, 256),
-                   nn.Dropout(p=0.1),
-                   nn.ReLU(inplace=True),
-                   nn.Linear(256, class_count))
+
+    model.fc = nn.Linear(num_features, class_count)
+
     return model
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,12 +39,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def model_fn(model_dir):
     print("In model_fn. Model directory is -")
     print(model_dir)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Net(class_count).to(device)
+
+    model = net(class_count).to(device)
     
     with open(os.path.join(model_dir, "model.pth"), "rb") as f:
         print("Loading the dog-classifier model")
-        checkpoint = torch.load(f , map_location=device)
+        checkpoint = torch.load(f, map_location=device)
         model.load_state_dict(checkpoint)
         print('MODEL-LOADED')
         logger.info('model loaded successfully')
@@ -57,14 +56,15 @@ def model_fn(model_dir):
 
 def input_fn(request_body, content_type=JPEG_CONTENT_TYPE):
     logger.info('Deserializing the input data.')
+
     # process an image uploaded to the endpoint
     #if content_type == JPEG_CONTENT_TYPE: return io.BytesIO(request_body)
     logger.debug(f'Request body CONTENT-TYPE is: {content_type}')
     logger.debug(f'Request body TYPE is: {type(request_body)}')
     if content_type == JPEG_CONTENT_TYPE: return Image.open(io.BytesIO(request_body))
     logger.debug('Loaded JPEG content')
+
     # process a URL submitted to the endpoint
-    
     if content_type == JSON_CONTENT_TYPE:
         #img_request = requests.get(url)
         logger.debug(f'Request body is: {request_body}')
@@ -76,7 +76,7 @@ def input_fn(request_body, content_type=JPEG_CONTENT_TYPE):
     
     raise Exception('Requested unsupported ContentType in content_type: {}'.format(content_type))
 
-# inference
+
 def predict_fn(input_object, model):
     logger.info('In predict fn')
                 
@@ -84,7 +84,7 @@ def predict_fn(input_object, model):
         transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
-        #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
     
     logger.info("transforming input")

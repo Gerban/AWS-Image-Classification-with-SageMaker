@@ -4,14 +4,13 @@ import os
 import logging
 import sys
 import argparse
-#from tqdm import tqdm
-#import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
+
 # Python Imaging Library: default format is png
 from PIL import ImageFile
 
@@ -24,11 +23,11 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def test(model, test_loader, loss_criterion, device):
-    '''
+    """
     TODO: Complete this function that can take a model and a 
           testing data loader and will get the test accuray/loss of the model
           Remember to include any debugging/profiling hooks that you might need
-    '''
+    """
     logger.info('Testing is starting...')
 
     model.to(device)
@@ -51,8 +50,11 @@ def test(model, test_loader, loss_criterion, device):
         total_loss_test = loss_test / len(test_loader.dataset)
         accuracy_test = correct_test.double() / len(test_loader.dataset)
     
-        logger.info(f"Testing Loss: {total_loss_test}")
-        logger.info(f"Testing Accuracy: {accuracy_test}")
+        logger.info(f'Testing Loss: {total_loss_test}')
+        logger.info(f'Testing Accuracy: {accuracy_test}')
+
+        print(f'total loss test: {total_loss_test}')
+        print(f'total test accuracy: {accuracy_test}')
 
     logger.info('Testing is now complete.')
 
@@ -60,17 +62,17 @@ def test(model, test_loader, loss_criterion, device):
 
 
 def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, device):
-    '''
+    """
     TODO: Complete this function that can take a model and
           data loaders for training and will get train the model
           Remember to include any debugging/profiling hooks that you might need
-    '''
+    """
     model.to(device)
 
     for epoch in range(epochs):
 
         model.train()
-        loss_train = 0
+        loss_train = 0.0
         correct_train = 0
 
         for images, target in train_loader:
@@ -86,14 +88,17 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
             _, pred_train = torch.max(outputs, 1)
             loss_train += loss.item() * images.size(0)
             correct_train += torch.sum(pred_train == target.data)
-
+            
         total_loss_train = loss_train / len(train_loader.dataset)
         accuracy_train = correct_train.double() / len(train_loader.dataset)
+
+        print(f'total loss train: {total_loss_train}')
+        print(f'total train accuracy: {accuracy_train}')
     
         logger.info(f'For Epoch {epoch+1}, Train loss is: {total_loss_train: .3f}, Train accuracy is: {accuracy_train}')
 
         model.eval()
-        loss_eval = 0
+        loss_eval = 0.0
         correct_eval = 0
 
         with torch.no_grad():
@@ -107,43 +112,43 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
                 loss_eval += loss.item() * images.size(0)
                 correct_eval += torch.sum(pred_eval == target.data)
 
-            total_loss_eval = loss_eval / len(valid_loader.dataset)
-            accuracy_eval = correct_eval.double() / len(valid_loader.dataset)
+        total_loss_eval = loss_eval / len(valid_loader.dataset)
+        accuracy_eval = correct_eval.double() / len(valid_loader.dataset)
 
-            logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
+        print(f'total loss eval: {total_loss_eval}')
+        print(f'total eval accuracy: {accuracy_eval}')
+
+        logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
 
     logger.info('Training has completed.')
     
     return model
 
+
 def net(class_count):
-    '''
+    """
     TODO: Complete this function that initializes your model
           Remember to use a pretrained model
     param: class_count: integer - the number of output classes of the image classification
-    '''
-    model = models.resnet50(pretrained=True)
-
+    """
+    model = models.resnet34(pretrained=True)
+    
     for param in model.parameters():
         param.requires_grad = False
 
     num_features = model.fc.in_features
     logger.info(f'number of linear layer input features are: {num_features}')
 
-    model.fc = nn.Sequential(
-        nn.Linear(num_features, 256),
-        nn.Dropout(p=0.1),
-        nn.ReLU(inplace=True),
-        nn.Linear(256, class_count))
+    model.fc = nn.Linear(num_features, class_count)
 
     return model
 
 
 def create_data_loaders(data, batch_size):
-    '''
+    """
     This is an optional function that you may or may not need to implement
     depending on whether you need to use data loaders or not
-    '''
+    """
     logger.info('Setting up data loaders...')
 
     train_data_path = os.path.join(data, 'train')
@@ -152,9 +157,9 @@ def create_data_loaders(data, batch_size):
     
     # Transform dataset first - resize, crop and normalize, then load train, valid, test data
     transform_train = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
         transforms.Resize(256),
-        transforms.RandomResizedCrop((224,224)),
+        transforms.CenterCrop(224),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
@@ -178,20 +183,19 @@ def create_data_loaders(data, batch_size):
 
 
 def main(args):
-    '''
+    """
     TODO: Initialize a model by calling the net function
-    '''
+    """
     logger.info(f'Hyperparameters are LR: {args.lr}, Batch Size: {args.batch_size}')
     logger.info(f'Data Paths: {args.data_dir}')
 
     # Use GPU unit if available
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    #device='cpu'
     print(f'Running model training on device {device}')
 
     class_count = 133
-    model=net(class_count)
-    model=model.to(device)
+    model = net(class_count)
+    model = model.to(device)
    
     # Import data using data loader function
     train_loader, valid_loader, test_loader = create_data_loaders(args.data_dir, args.batch_size)
@@ -200,10 +204,7 @@ def main(args):
     TODO: Create your loss and optimizer
     '''
     loss_criterion = nn.CrossEntropyLoss(ignore_index=class_count)
-    #optimizer = optim.Adam(model.fc.parameters(), lr=args.lr)
-        
-    # Testing - check whether other algos perform better
-    optimizer = optim.RMSprop(model.fc.parameters(), lr=args.lr, eps=args.eps, momentum=args.momentum)
+    optimizer = optim.Adam(model.fc.parameters(), lr=args.lr, eps=args.eps)
 
     '''
     TODO: Call the train function to start training your model
@@ -231,17 +232,15 @@ def main(args):
     logger.info('Model has been saved, hpo code has finished.')
 
 
-if __name__=='__main__':
-    parser=argparse.ArgumentParser()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
     '''
     TODO: Specify all the hyperparameters you need to use to train your model.
     '''
-    parser.add_argument('--batch_size', type=int, default=64, help='Add batch size for training (default is: 64)')
-    parser.add_argument('--epochs', type=int, default=5, help='Add number of epochs to train (default is: 20)')
-    parser.add_argument('--lr', type=float, default=0.05, metavar='LR', help='Add learning rate (default is: 0.05)')
-   
-    parser.add_argument('--eps', type=float, default=0.0000008, metavar='EPS')
-    parser.add_argument('--momentum', type=float, default=0.01, metavar='MM')
+    parser.add_argument('--batch_size', type=int, default=256, help='Add batch size for training (default is: 256)')
+    parser.add_argument('--epochs', type=int, default=10, help='Add number of epochs to train (default is: 10)')
+    parser.add_argument('--lr', type=float, default=0.003, metavar='LR', help='Add learning rate (default is: 0.003)')
+    parser.add_argument('--eps', type=float, default=0.000001, metavar='EPS')
 
     parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])

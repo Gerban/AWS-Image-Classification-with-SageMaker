@@ -2,10 +2,7 @@
 #For instance, below are some dependencies you might need if you are using Pytorch
 import os
 import logging
-import sys
 import argparse
-#from tqdm import tqdm
-#import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,7 +10,6 @@ import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
 
-import smdebug
 import smdebug.pytorch as smd
 from smdebug import modes
 from smdebug.pytorch import get_hook
@@ -32,11 +28,11 @@ logger.setLevel(logging.DEBUG)
 
 
 def test(model, test_loader, loss_criterion, device, hook):
-    '''
+    """
     TODO: Complete this function that can take a model and a 
-          testing data loader and will get the test accuray/loss of the model
+          testing data loader and will get the test accuracy/loss of the model
           Remember to include any debugging/profiling hooks that you might need
-    '''
+    """
     logger.info('Testing is starting...')
 
     if hook:
@@ -56,35 +52,21 @@ def test(model, test_loader, loss_criterion, device, hook):
             loss = loss_criterion(outputs, target)
            
             _, pred_test = torch.max(outputs, 1)
-            #_, pred_test = output.argmax(dim=1, keepdim=True)
             loss_test += loss.item() * images.size(0)
             correct_test += torch.sum(pred_test == target.data)
 
-            # Testing
-            print(f'outputs are: {outputs}')
-            print(f'loss is: {loss}')
-            print(f'prediction: {pred_test}')
-            print(f'actual value: {target.data}')
-            print(f'loss item check: {loss.item()}')
-            print(f'images size check: {images.size(0)}')
-            # End of testing
-            
-        ## Calculation not correct - remove later on
-        #total_loss_test = loss_test // len(test_loader)
-        #accuracy_test = correct_test.double() // len(test_loader)
-        
         total_loss_test = loss_test / len(test_loader.dataset)
-        accuracy_test =  correct_test.double() / len(test_loader.dataset)
-        
-        # Testing
+        accuracy_test = correct_test.double() / len(test_loader.dataset)
+
+        print(f'prediction: {pred_test}')
+        print(f'actual value: {target.data}')
         print(f'correct: {correct_test.double()}')
         print(f'size of dataset: {len(test_loader.dataset)}')
         print(f'total loss test: {total_loss_test}')
         print(f'total test accuracy: {accuracy_test}')
-        # End of testing
-        
-        logger.info(f"Testing Loss: {total_loss_test}")
-        logger.info(f"Testing Accuracy: {accuracy_test}")
+
+        logger.info(f'Testing Loss: {total_loss_test}')
+        logger.info(f'Testing Accuracy: {accuracy_test}')
 
     logger.info('Testing is now complete.')
 
@@ -92,11 +74,11 @@ def test(model, test_loader, loss_criterion, device, hook):
 
 
 def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, device, hook):
-    '''
+    """
     TODO: Complete this function that can take a model and
           data loaders for training and will get train the model
           Remember to include any debugging/profiling hooks that you might need
-    '''
+    """
    
     model.to(device)
 
@@ -105,7 +87,7 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
         model.train()
         hook.set_mode(smd.modes.TRAIN)
 
-        loss_train = 0
+        loss_train = 0.0
         correct_train = 0
 
         for images, target in train_loader:
@@ -124,12 +106,17 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
 
         total_loss_train = loss_train / len(train_loader.dataset)
         accuracy_train = correct_train.double() / len(train_loader.dataset)
+
+        print(f'correct: {correct_train.double()}')
+        print(f'size of train dataset: {len(train_loader.dataset)}')
+        print(f'total loss train: {total_loss_train}')
+        print(f'total train accuracy: {accuracy_train}')
         
         logger.info(f'For Epoch {epoch+1}, Train loss is: {total_loss_train: .3f}, Train accuracy is: {accuracy_train}')
 
         model.eval()
         hook.set_mode(smd.modes.EVAL)
-        loss_eval = 0
+        loss_eval = 0.0
         correct_eval = 0
 
         with torch.no_grad():
@@ -144,10 +131,15 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
                 loss_eval += loss.item() * images.size(0)
                 correct_eval += torch.sum(pred_eval == target.data)
 
-            total_loss_eval = loss_eval / len(valid_loader.dataset)
-            accuracy_eval =  correct_eval.double() / len(valid_loader.dataset)
+        total_loss_eval = loss_eval / len(valid_loader.dataset)
+        accuracy_eval = correct_eval.double() / len(valid_loader.dataset)
 
-            logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
+        logger.info(f'For Epoch {epoch + 1}, Validation loss is: {total_loss_eval: .3f}, Validation accuracy is: {accuracy_eval}')
+
+        print(f'correct: {correct_eval.double()}')
+        print(f'size of eval dataset: {len(valid_loader.dataset)}')
+        print(f'total loss eval: {total_loss_eval}')
+        print(f'total eval accuracy: {accuracy_eval}')
 
     logger.info('Training has completed.')
 
@@ -155,13 +147,13 @@ def train(model, train_loader, valid_loader, epochs, loss_criterion, optimizer, 
 
 
 def net(class_count):
-    '''
+    """
     TODO: Complete this function that initializes your model
           Remember to use a pretrained model
-    '''
-    logger.info('Initialize model fusing pre-trained model ResNet50')
-    model = models.resnet50(pretrained=True)
-
+    """
+    logger.info('Initialize model fusing pre-trained model ResNet34')
+    model = models.resnet34(pretrained=True)
+    
     for param in model.parameters():
         param.requires_grad = False
 
@@ -169,24 +161,17 @@ def net(class_count):
     
     logger.info(f'number of linear layer input features are: {num_features}')
 
-    # Add a fully connected layer to adapt the pre-trained model to the dog breed image classes
-    model.fc = nn.Sequential(
-        #nn.Linear(num_features, 512),
-        #nn.Dropout(p=0.1),
-        #nn.ReLU(inplace=True),
-        nn.Linear(num_features, 256),
-        nn.Dropout(p=0.1),
-        nn.ReLU(inplace=True),
-        nn.Linear(256, class_count))
+    ## Add a fully connected layer to adapt the pre-trained model to the dog breed image classes
+    model.fc = nn.Linear(num_features, class_count)
 
     return model
 
 
 def create_data_loaders(data, batch_size):
-    '''
+    """
     This is an optional function that you may or may not need to implement
     depending on whether you need to use data loaders or not
-    '''
+    """
     logger.info('Setting up data loaders...')
 
     train_data_path = os.path.join(data, 'train')
@@ -195,9 +180,9 @@ def create_data_loaders(data, batch_size):
     
     # Transform dataset first - resize, crop and normalize, then load train, valid, test data
     transform_train = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
         transforms.Resize(256),
-        transforms.RandomResizedCrop((224,224)),
+        transforms.CenterCrop(224),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
@@ -230,12 +215,11 @@ def main(args):
 
     # Use GPU unit if available
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    #device='cpu'
     print(f'Running model training on device {device}')
 
-    class_count = 33
-    model=net(class_count)
-    model=model.to(device)
+    class_count = 133
+    model = net(class_count)
+    model = model.to(device)
   
     hook = smd.Hook.create_from_json_file()
     hook.register_hook(model)
@@ -246,18 +230,15 @@ def main(args):
     '''
     TODO: Create your loss and optimizer
     '''
-    loss_criterion = nn.CrossEntropyLoss()
-    #optimizer = optim.Adam(model.fc.parameters(), lr=args.lr)
-    
-    # Testing - check whether other algos perform better
-    optimizer = optim.RMSprop(model.fc.parameters(), lr=args.lr, eps=args.eps, momentum=args.momentum)
+    loss_criterion = nn.CrossEntropyLoss(ignore_index=class_count)
+    optimizer = optim.Adam(model.fc.parameters(), lr=args.lr, eps=args.eps)
     
     '''
     TODO: Call the train function to start training your model
     Remember that you will need to set up a way to get training data from S3
     '''
     logger.info('Start model training...')
-    model=train(model, train_loader, valid_loader, args.epochs, loss_criterion, optimizer, device, hook)
+    model = train(model, train_loader, valid_loader, args.epochs, loss_criterion, optimizer, device, hook)
     
     '''
     TODO: Test the model to see its accuracy
@@ -274,27 +255,22 @@ def main(args):
     if not os.path.exists(args.model_dir):
         os.makedirs(args.model_dir)
     torch.save(model.state_dict(), os.path.join(args.model_dir, "model.pth"))
-    
-    #model_path = os.path.join(args.model_dir, 'model.pth')
-    #torch.save(model.cpu().state_dict(), model_path)
 
 
-if __name__=='__main__':
-    parser=argparse.ArgumentParser()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
     '''
     TODO: Specify any training args that you might need
     '''
-    parser.add_argument('--batch_size', type=int, default=64, help='Add batch size for training (default is: 64)')
+    parser.add_argument('--batch_size', type=int, default=256, help='Add batch size for training (default is: 256)')
     parser.add_argument('--epochs', type=int, default=10, help='Add number of epochs to train (default is: 10)')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR', help='Add learning rate (default is: 0.01)')
-
-    parser.add_argument('--eps', type=float, default=0.0000008, metavar='EPS')
-    parser.add_argument('--momentum', type=float, default=0.01, metavar='MM')
-    
+    parser.add_argument('--lr', type=float, default=0.003, metavar='LR', help='Add learning rate (default is: 0.003)')
+    parser.add_argument('--eps', type=float, default=0.000001, metavar='EPS')
+   
     parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
     parser.add_argument('--output_dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
     
-    args=parser.parse_args()
+    args = parser.parse_args()
     
     main(args)
