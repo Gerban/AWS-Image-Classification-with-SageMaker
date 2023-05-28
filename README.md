@@ -2,12 +2,12 @@
 
 AWS Sagemaker was used to use transfer learning to train a pretrained model (Resnet34) 
 to predict which dog breed a dog image is. The input data consisted of 133 classes of dog images.
-Aside from hyper-parameter tuning Sagemaker profiler and debugger were used during the training process.
-Training and evaluation losses were plotted and some recommendations on model improvements provided.
-The model was deployed at an endpoint with a couple of inference examples carried out for testing. Process:
+Aside from hyperparameter tuning Sagemaker profiler and debugger were used during the training process.
+Training and evaluation losses were plotted and some recommendations on model improvements were provided.
+The model was deployed to an endpoint with a couple of inference examples carried out for testing. Process:
 
-- A pre-trained Resnet34 model was adapted for dog image classification by adding additional dense layers.
-- Hyperparameters were tuned to find the best hyperparameter combination.
+- A pre-trained Resnet34 model was adapted for dog image classification by adding dense layers.
+- Hyperparameters were tuned to find a best hyperparameter combination.
 - The model was trained, where Sagemaker debugger and profiler were used with their outputs recorded.
 - The model was deployed to an endpoint and a number of inferences were carried out on test images.
 
@@ -32,13 +32,15 @@ Data was uploaded to S3 bucket: s3://sagemaker-us-east-1-308298057408/data/dogIm
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges 
 used for the hyperparameter search:
 A multi-class image classification model was used to classify dog images with 133 classes.
-As a model a CNN (Resnet34) was used with added linear layers for transfer learning.
+As a model a CNN (Resnet34) was used with an added linear layer using transfer learning.
 
 For loss optimisation the Adam Optimiser was used and CrossEntropyLoss as a loss function.
 Other optimisers, such as AdamW, RMSprop and SGD as well as ADAgrad and ADADelta were also tested but Adam and AdamW
-performed better overall with limited computing resources in particular.
-More fully connected NN layers were also added initially and Resnet50 trialled but this lead to more memory challenges 
-and only one basic layer was added to the pre-trained Resnet34 in the end.
+performed better overall whilst using available resources not above service account limit.
+More fully connected NN layers were also added initially and Resnet50 trialled but this lead to more memory challenges.
+Initialising weights for the fully connected layers, e.g. by using Xavier, Normal or Kaiming distributions, was also introduced
+to counteract poor weight initialisation but the main challenge was compute resources. Therefore, only one basic layer was added 
+to the pre-trained Resnet34 in the end.
 
 Tuned hyperparameters for final model based Adam Optimiser were:
 - epochs: 10
@@ -56,16 +58,17 @@ Links to screenshots for hyperparameter tuning,  training jobs, and also outputs
 
 ![S3_bucket_outputs](screenshots/S3_bucket_outputs.png)
 
-Losses for training and validation data are plotted in the graph, showing a gradual decline for both training 
-and validation data initially but it also points to some over-fitting on training data as validation loss becomes
-stagnant. Smaller learning rates can usually help with this issue (the relatively large learning rate used was a result of 
-hyperparameter tuning but there may be better global optima and the returned hyperparameters may only be a local optimum).
+Losses for training and validation data were plotted in the graph, showing a gradual decline for training data but it 
+also points to some over-fitting on the trainin data as validation losses are more stagnant. Smaller learning rates can 
+usually help with this issue. The relatively large learning rate used was a result of hyperparameter tuning but there 
+may be a better global optimum and the returned hyperparameters may only be a local optimum.
 
 ![Crossentropy_loss](screenshots/crossentropy_loss.png)
 
 ## Model Performance
-- With limited compute instance types available a respectable model accuracy was reached after 25 epochs of training:
-just over 50% on training data but still a bit below 40% on validation and test data, evidence of some over-fitting. 
+- With limited instance types available below service account limit a reasonable initial model accuracy was reached 
+after 25 epochs of training:
+accuracy just over 50% on training data but still a bit below 40% on validation and test data, which shows evidence of some over-fitting. 
 - Best hyperparameters returned may be a local optimum and tweaking the ranges, especially with a lower learning rate
 upper bound, is expected to further improve model accuracy and remedy some over-fitting issues on the training data.
 
@@ -79,7 +82,7 @@ Initially, vanishing gradient issues occurred, and adding a higher 'eps' value t
 Some remaining issues with poor weight initialisation point to too little processing capacity, and this has caused the 
 neural network to learn less well with poorer accuracy especially on the validation and test datasets.
 Choosing more powerful instance types, such as 'ml.g4dn.2xlarge' or higher, or GPU compute units is expected to remedy
-this but current account profile restrictions mean that it as not possible to do this.
+this but due to current service account limits it was not possible to switch to more powerful instance types.
 
 Sagemaker Profiler can be used to flag compute performance, which shows system usage statistics, such as low or high CPU, GPU 
 utilisation. The Profiler Report also flags how many times profiler rule infringements were triggered. Four types were
@@ -87,9 +90,11 @@ triggered, with by far the most frequent one being to do with memory issues:
 - GPUMemoryIncrease: "Choose a larger instance type with more memory if footprint is close to maximum available memory.":
 triggered 449 out of 5256 times.
 
-Also triggered 36 times each were LowGPUUtilization and CPUBottlenecks, and BatchSize was also triggered 4 times.
+Also triggered 36 times each were LowGPUUtilization and CPUBottlenecks, and BatchSize was also triggered 4 times indicating
+that BatSize was too small. BatchSize of 128 was obtained from hyperparameter optimisation but that may be a local optimum 
+rather than the best global option within the search space.
 
-Main step to take: use of larger compute instance types (limited by current account settings).
+**Main step for further improvements:** use of larger compute instance types.
 
 Link to SageMaker Profiler Report with further details: 
 

@@ -3,7 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>train_and_deploy_AG_V2</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>train_and_deploy_AG</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 
 
@@ -14772,9 +14772,9 @@ Requirement already satisfied: urllib3&lt;1.27,&gt;=1.21.1 in /opt/conda/lib/pyt
 
 
 
-<div id="226a7848-d1d4-429c-8650-cff4edc32c35" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
+<div id="a51105a5-dc1b-4b46-b393-dc41f446f52e" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
 <script type="text/javascript">
-var element = document.getElementById('226a7848-d1d4-429c-8650-cff4edc32c35');
+var element = document.getElementById('a51105a5-dc1b-4b46-b393-dc41f446f52e');
 (function(root) {
   function now() {
     return new Date();
@@ -15064,9 +15064,9 @@ function(Bokeh) {
 
 
 
-<div id="226a7848-d1d4-429c-8650-cff4edc32c35" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
+<div id="a51105a5-dc1b-4b46-b393-dc41f446f52e" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
 <script type="text/javascript">
-var element = document.getElementById('226a7848-d1d4-429c-8650-cff4edc32c35');
+var element = document.getElementById('a51105a5-dc1b-4b46-b393-dc41f446f52e');
 (function(root) {
   function now() {
     return new Date();
@@ -15356,9 +15356,9 @@ function(Bokeh) {
 
 
 
-<div id="226a7848-d1d4-429c-8650-cff4edc32c35" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
+<div id="a51105a5-dc1b-4b46-b393-dc41f446f52e" class="jp-RenderedJavaScript jp-OutputArea-output " data-mime-type="application/javascript">
 <script type="text/javascript">
-var element = document.getElementById('226a7848-d1d4-429c-8650-cff4edc32c35');
+var element = document.getElementById('a51105a5-dc1b-4b46-b393-dc41f446f52e');
 (function(root) {
   function now() {
     return new Date();
@@ -25656,20 +25656,24 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Current issues in above output: loss not decreasing and very low accuracy - needs further investigation</p>
-
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p><strong>TODO</strong>: Is there some anomalous behaviour in your debugging output? If so, what is the error and how will you fix it?<br>
-<strong>TODO</strong>: If not, suppose there was an error. What would that error look like and how would you have fixed it?</p>
+<p><strong>TODO</strong>: Is there some anomalous behaviour in your debugging output? If so, what is the error and how will you fix it?</p>
+<ul>
+<li>Initial issues with vanishing gradient were remedied by increasing the value of the EPS parameter.</li>
+<li>Losses for training and validation data show a gradual decline for both training data but it also 
+points to some over-fitting on training data as validation losses are more stagnant. Smaller learning rates can usually 
+help with this issue (the relatively large learning rate used was a result of hyperparameter tuning but there may be a better 
+global optimum and the returned hyperparameters may only be a local optimum).</li>
+</ul>
+<p>Sagemaker Profiler can be used to flag compute performance, which shows system usage statistics, such as low or high CPU, GPU 
+utilisation. The Profiler Report also flags how many times profiler rule infringements were triggered. Four types were
+triggered, with by far the most frequent one being to do with memory issues:</p>
+<ul>
+<li>GPUMemoryIncrease: "Choose a larger instance type with more memory if footprint is close to maximum available memory.":
+triggered 449 out of 5256 times. The use of a larger instance type should help with this.</li>
+</ul>
+<p>Also triggered 36 times each were LowGPUUtilization and CPUBottlenecks, and BatchSize was also triggered 4 times indicating
+that BatSize was too small. BatchSize of 128 was obtained from hyperparameter optimisation but that may be a local optimum 
+rather than the best global option within the search space. For more details see the README file.</p>
 
 </div>
 </div>
